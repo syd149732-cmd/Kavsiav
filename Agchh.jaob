@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تاكس فيجن | الفواتير الضريبية</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #0a0f1a, #0f172a, #1e1b4b);
+            min-height: 100vh;
+        }
+        
+        /* تأثيرات الحركة */
+        @keyframes تموج {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        @keyframes توهج {
+            0%, 100% { text-shadow: 0 0 5px rgba(99,102,241,0.5); }
+            50% { text-shadow: 0 0 30px rgba(99,102,241,0.8); }
+        }
+        
+        @keyframes انزلاق {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        @keyframes نبض {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        /* شريط التنقل */
+        .شريط {
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(20px);
+            padding: 1rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .شعار {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: توهج 2s ease-in-out infinite;
+        }
+        
+        /* القسم الرئيسي */
+        .القسم-الرئيسي {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 120px 5% 60px;
+        }
+        
+        .العنوان-الرئيسي {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+            animation: توهج 2s ease-in-out infinite;
+        }
+        
+        .النص-الترحيبي {
+            font-size: 1.2rem;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 2rem;
+        }
+        
+        /* صندوق البحث */
+        .صندوق-البحث {
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 80px;
+            padding: 8px 20px;
+            display: flex;
+            max-width: 600px;
+            margin: 2rem auto;
+            border: 2px solid rgba(99,102,241,0.5);
+        }
+        
+        .حقل-البحث {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 18px 25px;
+            font-size: 1rem;
+            color: white;
+            font-family: inherit;
+            outline: none;
+        }
+        
+        .حقل-البحث::placeholder {
+            color: rgba(255,255,255,0.5);
+        }
+        
+        .زر-البحث {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border: none;
+            padding: 12px 35px;
+            border-radius: 60px;
+            font-weight: 700;
+            cursor: pointer;
+            color: white;
+            font-family: inherit;
+        }
+        
+        /* نتيجة البحث */
+        .نتيجة-البحث {
+            margin-top: 2rem;
+            padding: 25px;
+            border-radius: 25px;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(15px);
+            display: none;
+            max-width: 550px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .نتيجة-البحث.ظاهر {
+            display: block;
+            border: 2px solid #10b981;
+        }
+        
+        .رمز-النتيجة {
+            font-size: 3rem;
+        }
+        
+        .عنوان-النتيجة {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin: 10px 0;
+            color: #f59e0b;
+        }
+        
+        .زر-التواصل {
+            display: inline-block;
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: white;
+            padding: 12px 32px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            margin-top: 15px;
+        }
+        
+        .شارة {
+            display: inline-block;
+            background: rgba(99,102,241,0.2);
+            padding: 12px 28px;
+            border-radius: 60px;
+            margin-top: 2rem;
+            color: #a855f7;
+        }
+        
+        /* شبكة المميزات */
+        .شبكة-المميزات {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 5%;
+        }
+        
+        .بطاقة-مميزة {
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            border: 1px solid rgba(99,102,241,0.3);
+        }
+        
+        .أيقونة-مميزة {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+        }
+        
+        .أيقونة-مميزة i {
+            font-size: 2rem;
+            color: white;
+        }
+        
+        .عنوان-مميز {
+            color: #a855f7;
+            margin-bottom: 0.5rem;
+        }
+        
+        .وصف-مميز {
+            color: rgba(255,255,255,0.7);
+        }
+        
+        /* قسم الواتساب */
+        .قسم-واتساب {
+            text-align: center;
+            padding: 50px 5%;
+        }
+        
+        .زر-واتساب-رئيسي {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: white;
+            padding: 15px 45px;
+            border-radius: 60px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        
+        /* التذييل */
+        .تذييل {
+            background: #05070f;
+            padding: 30px;
+            text-align: center;
+            color: rgba(255,255,255,0.5);
+        }
+        
+        /* شاشات الجوال */
+        @media (max-width: 768px) {
+            .العنوان-الرئيسي {
+                font-size: 2rem;
+            }
+            .صندوق-البحث {
+                flex-direction: column;
+                border-radius: 30px;
+                padding: 15px;
+            }
+            .زر-البحث {
+                margin-top: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="شريط">
+        <div class="شعار">✨ تاكس فيجن ✨</div>
+    </div>
+
+    <div class="القسم-الرئيسي">
+        <div>
+            <h1 class="العنوان-الرئيسي">تاكس فيجن<br>رؤيتك للفواتير الضريبية</h1>
+            <p class="النص-الترحيبي">الحل الأمثل للفواتير الضريبية الإلكترونية والورقية بأعلى معايير المصداقية والجودة</p>
+            
+            <div class="صندوق-البحث">
+                <input type="text" id="البحث" class="حقل-البحث" placeholder="🔍 ابحث عن نشاطك التجاري..." onkeypress="ضغطEnter(event)">
+                <button onclick="بحث()" class="زر-البحث">🔍 بحث</button>
+            </div>
+            
+            <div id="النتيجة" class="نتيجة-البحث"></div>
+            
+            <div class="شارة">
+                <i class="fas fa-check-circle"></i> مطابق للمنظومة الضريبية 100%
+            </div>
+        </div>
+    </div>
+
+    <div class="شبكة-المميزات">
+        <div class="بطاقة-مميزة">
+            <div class="أيقونة-مميزة"><i class="fas fa-shield-alt"></i></div>
+            <h3 class="عنوان-مميز">فواتير رسمية</h3>
+            <p class="وصف-مميز">صادرة من شركات حقيقية ومعتمدة وليست وهمية</p>
+        </div>
+        <div class="بطاقة-مميزة">
+            <div class="أيقونة-مميزة"><i class="fas fa-check-double"></i></div>
+            <h3 class="عنوان-مميز">مطابقة للضريبة</h3>
+            <p class="وصف-مميز">متوافقة مع منظومة الفاتورة الإلكترونية 100%</p>
+        </div>
+        <div class="بطاقة-مميزة">
+            <div class="أيقونة-مميزة"><i class="fas fa-file-invoice"></i></div>
+            <h3 class="عنوان-مميز">ضمانات كاملة</h3>
+            <p class="وصف-مميز">نوفر جميع المستندات الرسمية والضمانات</p>
+        </div>
+        <div class="بطاقة-مميزة">
+            <div class="أيقونة-مميزة"><i class="fas fa-trophy"></i></div>
+            <h3 class="عنوان-مميز">أسعار تنافسية</h3>
+            <p class="وصف-مميز">أفضل الأسعار مع أعلى مستوى من الجودة</p>
+        </div>
+    </div>
+
+    <div class="قسم-واتساب">
+        <a href="https://wa.me/201004765443?text=السلام%20عليكم%20أحتاج%20فاتورة%20ضريبية" class="زر-واتساب-رئيسي" target="_blank">
+            <i class="fab fa-whatsapp fa-2x"></i> تواصل معنا عبر واتساب
+        </a>
+    </div>
+
+    <div class="تذييل">
+        <p>جميع الحقوق محفوظة © 2024 تاكس فيجن</p>
+    </div>
+
+    <script>
+        function بحث() {
+            var النشاط = document.getElementById('البحث').value.trim();
+            var النتيجة = document.getElementById('النتيجة');
+            
+            if (النشاط === "") {
+                النتيجة.className = 'نتيجة-البحث';
+                النتيجة.innerHTML = '<div class="رمز-النتيجة">🔍</div><div class="عنوان-النتيجة">يرجى إدخال النشاط التجاري</div>';
+                النتيجة.style.display = 'block';
+                return;
+            }
+            
+            النتيجة.className = 'نتيجة-البحث ظاهر';
+            النتيجة.innerHTML = `
+                <div class="رمز-النتيجة">✅</div>
+                <div class="عنوان-النتيجة">✓ نشاط "${النشاط}" متوفر!</div>
+                <a href="https://wa.me/201004765443?text=السلام%20عليكم%20أحتاج%20فاتورة%20ضريبية%20لنشاط%20${encodeURIComponent(النشاط)}" class="زر-التواصل" target="_blank"><i class="fab fa-whatsapp"></i> تواصل الآن لعمل الفاتورة</a>
+            `;
+        }
+        
+        function ضغطEnter(event) {
+            if (event.key === 'Enter') {
+                بحث();
+            }
+        }
+    </script>
+
+</body>
+</html>
