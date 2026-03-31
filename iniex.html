@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>تاكس فيجن | الفواتير الضريبية المعتمدة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        /* تأثيرات الحركة */
+        @keyframes طفو {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        @keyframes توهج {
+            0%, 100% { text-shadow: 0 0 10px rgba(99,102,241,0.5); }
+            50% { text-shadow: 0 0 30px rgba(99,102,241,0.8); }
+        }
+
+        @keyframes نبض {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes دخول {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* شريط التنقل */
+        .navbar {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(20px);
+            padding: 1rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #a855f7, #6366f1, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: توهج 2s ease-in-out infinite;
+        }
+
+        .login-area {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .login-btn {
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            color: white;
+            padding: 10px 28px;
+            border-radius: 50px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        .login-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(99,102,241,0.5);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(99,102,241,0.2);
+            padding: 8px 20px;
+            border-radius: 50px;
+            border: 1px solid rgba(99,102,241,0.5);
+        }
+
+        .user-info span {
+            color: #a855f7;
+            font-weight: 500;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.15);
+            color: white;
+            padding: 5px 18px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* القسم الرئيسي */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 120px 5% 60px;
+        }
+
+        .hero-content {
+            animation: دخول 0.8s ease-out;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #a855f7, #6366f1, #3b82f6, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+            animation: توهج 2s ease-in-out infinite;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: rgba(255,255,255,0.85);
+            margin-bottom: 2rem;
+            line-height: 1.8;
+        }
+
+        /* صندوق البحث */
+        .search-container {
+            max-width: 650px;
+            margin: 2rem auto;
+        }
+
+        .search-box {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 80px;
+            padding: 5px 5px 5px 20px;
+            display: flex;
+            border: 2px solid rgba(99,102,241,0.5);
+            transition: all 0.3s;
+        }
+
+        .search-box:hover,
+        .search-box:focus-within {
+            border-color: #a855f7;
+            box-shadow: 0 0 20px rgba(99,102,241,0.3);
+        }
+
+        .search-box input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 18px 15px;
+            font-size: 1rem;
+            color: white;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .search-box input::placeholder {
+            color: rgba(255,255,255,0.6);
+        }
+
+        .search-box button {
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            border: none;
+            padding: 12px 35px;
+            border-radius: 60px;
+            font-weight: 700;
+            cursor: pointer;
+            color: white;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        .search-box button:hover {
+            transform: scale(1.02);
+        }
+
+        /* نتيجة البحث */
+        .search-result {
+            margin-top: 2rem;
+            padding: 25px;
+            border-radius: 25px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(15px);
+            display: none;
+            animation: دخول 0.4s ease;
+            border: 2px solid #10b981;
+        }
+
+        .search-result.show {
+            display: block;
+        }
+
+        .result-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .result-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin: 10px 0;
+            color: #f59e0b;
+        }
+
+        .result-message {
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .whatsapp-contact {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: white;
+            padding: 12px 35px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            transition: all 0.3s;
+            animation: نبض 1.5s ease-in-out infinite;
+        }
+
+        .whatsapp-contact:hover {
+            transform: scale(1.05);
+        }
+
+        .badge {
+            display: inline-block;
+            background: rgba(99,102,241,0.2);
+            backdrop-filter: blur(10px);
+            padding: 12px 28px;
+            border-radius: 60px;
+            margin-top: 2rem;
+            border: 1px solid rgba(99,102,241,0.4);
+            color: #a855f7;
+        }
+
+        /* المميزات */
+        .features {
+            padding: 80px 5%;
+            background: linear-gradient(135deg, #0f0c29, #1a1738);
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.3rem;
+            font-weight: 700;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #a855f7, #6366f1, transparent);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.4s;
+            border: 1px solid rgba(99,102,241,0.3);
+            animation: طفو 4s ease-in-out infinite;
+        }
+
+        .feature-card:nth-child(2) { animation-delay: 0.5s; }
+        .feature-card:nth-child(3) { animation-delay: 1s; }
+        .feature-card:nth-child(4) { animation-delay: 1.5s; }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            border-color: #a855f7;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+        }
+
+        .feature-icon i {
+            font-size: 2.5rem;
+            color: white;
+        }
+
+        .feature-card h3 {
+            color: #a855f7;
+            margin-bottom: 0.8rem;
+            font-size: 1.3rem;
+        }
+
+        .feature-card p {
+            color: rgba(255,255,255,0.75);
+            line-height: 1.6;
+        }
+
+        /* المستندات */
+        .documents {
+            padding: 80px 5%;
+            background: linear-gradient(135deg, #1a1738, #0f0c29);
+        }
+
+        .doc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .doc-item {
+            background: rgba(99,102,241,0.1);
+            border-radius: 18px;
+            padding: 1.5rem;
+            text-align: center;
+            border: 1px solid rgba(99,102,241,0.3);
+            transition: all 0.3s;
+        }
+
+        .doc-item:hover {
+            transform: scale(1.02);
+            background: rgba(99,102,241,0.2);
+        }
+
+        .doc-item i {
+            font-size: 2rem;
+            color: #a855f7;
+            margin-bottom: 0.8rem;
+            display: block;
+        }
+
+        .doc-item span {
+            color: rgba(255,255,255,0.85);
+            font-size: 0.9rem;
+        }
+
+        /* زر الواتساب الرئيسي */
+        .whatsapp-main {
+            text-align: center;
+            padding: 70px 5%;
+            background: linear-gradient(135deg, #0f0c29, #1a1738);
+        }
+
+        .whatsapp-main-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: white;
+            padding: 18px 50px;
+            border-radius: 60px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+            animation: نبض 2s ease-in-out infinite;
+        }
+
+        .whatsapp-main-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 40px rgba(37,211,102,0.4);
+        }
+
+        /* نافذة تسجيل الدخول */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(15px);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1a1738, #0f0c29);
+            border-radius: 30px;
+            padding: 40px;
+            width: 90%;
+            max-width: 420px;
+            text-align: center;
+            border: 2px solid #a855f7;
+            animation: دخول 0.4s ease;
+        }
+
+        .modal-content h2 {
+            color: #a855f7;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 14px;
+            margin: 12px 0;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-family: inherit;
+            font-size: 1rem;
+            border: 1px solid rgba(99,102,241,0.3);
+            outline: none;
+        }
+
+        .modal-content input:focus {
+            border-color: #a855f7;
+        }
+
+        .modal-content button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            color: white;
+            margin-top: 1rem;
+            font-size: 1rem;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 2rem;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .close-modal:hover {
+            color: #a855f7;
+        }
+
+        /* التذييل */
+        .footer {
+            background: #05070f;
+            padding: 30px 5% 20px;
+            text-align: center;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.9rem;
+        }
+
+        /* استجابة للجوال */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+            .hero p {
+                font-size: 1rem;
+            }
+            .section-title {
+                font-size: 1.6rem;
+            }
+            .search-box {
+                flex-direction: column;
+                border-radius: 30px;
+                padding: 15px;
+            }
+            .search-box button {
+                margin-top: 10px;
+                width: 100%;
+            }
+            .navbar {
+                flex-direction: column;
+                gap: 12px;
+                padding: 12px 5%;
+            }
+            .logo {
+                font-size: 1.3rem;
+            }
+            .login-btn {
+                padding: 6px 20px;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo">✨ تاكس فيجن ✨</div>
+        <div class="login-area" id="loginArea">
+            <button class="login-btn" onclick="openModal()">
+                <i class="fas fa-user"></i> تسجيل الدخول
+            </button>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1>تاكس فيجن<br>رؤيتك للفواتير الضريبية</h1>
+            <p>الحل الأمثل للفواتير الضريبية الإلكترونية والورقية<br>بأعلى معايير المصداقية والجودة والضمان</p>
+            
+            <div class="search-container">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="🔍 ابحث عن نشاطك التجاري..." onkeypress="handleEnter(event)">
+                    <button onclick="searchActivity()">بحث</button>
+                </div>
+                
+                <div id="searchResult" class="search-result"></div>
+            </div>
+            
+            <div class="badge">
+                <i class="fas fa-check-circle"></i> مطابق للمنظومة الضريبية 100%
+            </div>
+        </div>
+    </section>
+
+    <section class="features">
+        <h2 class="section-title">✨ مميزات تاكس فيجن ✨</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+                <h3>فواتير رسمية</h3>
+                <p>صادرة من شركات حقيقية ومعتمدة وليست وهمية</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-check-double"></i></div>
+                <h3>مطابقة للضريبة</h3>
+                <p>متوافقة مع منظومة الفاتورة الإلكترونية 100%</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-file-invoice"></i></div>
+                <h3>ضمانات كاملة</h3>
+                <p>نوفر جميع المستندات الرسمية والضمانات</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-trophy"></i></div>
+                <h3>أسعار تنافسية</h3>
+                <p>أفضل الأسعار مع أعلى مستوى من الجودة</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="documents">
+        <h2 class="section-title">📎 المستندات المرفقة مع الفاتورة 📎</h2>
+        <div class="doc-grid">
+            <div class="doc-item"><i class="fas fa-id-card"></i><span>شهادة التسجيل في ضريبة القيمة المضافة</span></div>
+            <div class="doc-item"><i class="fas fa-building"></i><span>صورة السجل التجاري</span></div>
+            <div class="doc-item"><i class="fas fa-credit-card"></i><span>صورة البطاقة الضريبية</span></div>
+            <div class="doc-item"><i class="fas fa-receipt"></i><span>إيصال استلام نقدية</span></div>
+            <div class="doc-item"><i class="fas fa-file-signature"></i><span>إقرار ضريبي</span></div>
+            <div class="doc-item"><i class="fas fa-desktop"></i><span>لقطة شاشة للتأكيد</span></div>
+        </div>
+    </section>
+
+    <div class="whatsapp-main">
+        <a href="https://wa.me/201004765443?text=السلام%20عليكم%20أحتاج%20فاتورة%20ضريبية" class="whatsapp-main-btn" target="_blank">
+            <i class="fab fa-whatsapp fa-2x"></i> تواصل معنا عبر واتساب
+        </a>
+    </div>
+
+    <footer class="footer">
+        <p>© 2024 تاكس فيجن - جميع الحقوق محفوظة</p>
+    </footer>
+
+    <!-- نافذة تسجيل الدخول -->
+    <div id="loginModal" class="modal">
+        <span class="close-modal" onclick="closeModal()">&times;</span>
+        <div class="modal-content">
+            <h2><i class="fas fa-user-lock"></i> تسجيل الدخول</h2>
+            <form id="loginForm" onsubmit="return submitLogin(event)">
+                <input type="email" id="loginEmail" placeholder="البريد الإلكتروني" required>
+                <input type="password" id="loginPassword" placeholder="كلمة المرور" required>
+                <button type="submit">دخول</button>
+            </form>
+            <p style="margin-top: 1rem; color: rgba(255,255,255,0.5); font-size: 0.8rem;">سيتم إرسال بياناتك للإدارة</p>
+        </div>
+    </div>
+
+    <script>
+        let isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        let userEmail = localStorage.getItem('userEmail') || '';
+
+        function updateUI() {
+            const loginArea = document.getElementById('loginArea');
+            if (isLoggedIn && userEmail) {
+                loginArea.innerHTML = `
+                    <div class="user-info">
+                        <span><i class="fas fa-user-check"></i> ${userEmail}</span>
+                        <span onclick="logout()" class="logout-btn">تسجيل خروج</span>
+                    </div>
+                `;
+            } else {
+                loginArea.innerHTML = `<button class="login-btn" onclick="openModal()"><i class="fas fa-user"></i> تسجيل الدخول</button>`;
+            }
+        }
+
+        function openModal() {
+            document.getElementById('loginModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('loginModal').style.display = 'none';
+        }
+
+        function submitLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            // حفظ البيانات في localStorage
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('userEmail', email);
+            localStorage.setItem('userPassword', password);
+            
+            isLoggedIn = true;
+            userEmail = email;
+            
+            updateUI();
+            closeModal();
+            document.getElementById('loginForm').reset();
+            
+            // عرض البيانات في وحدة التحكم
+            console.log('📧 البريد:', email);
+            console.log('🔑 كلمة المرور:', password);
+            console.log('⏰ الوقت:', new Date().toLocaleString('ar-EG'));
+            
+            alert('✓ تم تسجيل الدخول بنجاح!');
+            
+            return false;
+        }
+
+        function logout() {
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('userEmail');
+            localStorage.removeItem('userPassword');
+            isLoggedIn = false;
+            userEmail = '';
+            updateUI();
+            alert('تم تسجيل الخروج بنجاح');
+        }
+
+        function searchActivity() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            const resultDiv = document.getElementById('searchResult');
+            
+            if (searchTerm === "") {
+                resultDiv.className = 'search-result';
+                resultDiv.innerHTML = '<div class="result-icon">🔍</div><div class="result-title">يرجى إدخال النشاط التجاري</div><div class="result-message">اكتب نشاطك التجاري وسنقوم بتوفير الفاتورة المناسبة لك</div>';
+                resultDiv.style.display = 'block';
+                return;
+            }
+            
+            resultDiv.className = 'search-result show';
+            resultDiv.innerHTML = `
+                <div class="result-icon">✅</div>
+                <div class="result-title">✓ نشاط "${searchTerm}" متوفر!</div>
+                <div class="result-message">يسعدنا خدمتكم وتوفير فاتورة ضريبية معتمدة لنشاطكم التجاري بكل احترافية وبأفضل الأسعار.</div>
+                <a href="https://wa.me/201004765443?text=السلام%20عليكم%20أحتاج%20فاتورة%20ضريبية%20لنشاط%20${encodeURIComponent(searchTerm)}" class="whatsapp-contact" target="_blank"><i class="fab fa-whatsapp"></i> تواصل الآن لعمل الفاتورة</a>
+            `;
+        }
+
+        function handleEnter(event) {
+            if (event.key === 'Enter') {
+                searchActivity();
+            }
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('loginModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        updateUI();
+    </script>
+
+</body>
+</html>
